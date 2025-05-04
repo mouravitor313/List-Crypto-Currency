@@ -14,6 +14,7 @@ var cryptos []models.Crypto
 
 func main() {
     config.LoadAPIKey()
+    config.InitRedis()
 
     var err error
     cryptos, err = api.GetTopCryptos()
