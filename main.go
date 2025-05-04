@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-playground/locales/currency"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
@@ -142,6 +143,21 @@ func handleWebSocketConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	currency := r.URL.Query().Get("currency")
+	if currency == "" {
+		currency = "USD"
+	}
+
+	exchangeRate := 1.0
+	if currency != "USD" {
+		var err error
+		exchangeRate, err = getExchangeRate(currency)
+		if err != nil {
+			fmt.Println("Erro ao obter taxa de câmbio:", err)
+			exchangeRate = 1.0
+		}
+	}
+
 	mu.Lock()
 	clients[conn] = true
 	mu.Unlock()
@@ -149,7 +165,17 @@ func handleWebSocketConnections(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case data := <- broadcast:
-			conn.WriteJSON(data)
+			var convertedCryptos []Crypto
+			for _, crypto := range data {
+				convertedCryptos = append(convertedCryptos, Crypto{
+					Name: crypto.Name,
+					Symbol: crypto.Symbol,
+					MarketCap: crypto.MarketCap * exchangeRate,
+					CurrentPrice: crypto.CurrentPrice * exchangeRate,
+					MarketCapRank: crypto.MarketCapRank,
+				})
+			}
+			conn.WriteJSON(convertedCryptos)
 		}
 	}
 }
