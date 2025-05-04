@@ -20,8 +20,11 @@ func main() {
     if err != nil {
         fmt.Println("Erro ao obter criptos:", err)
     } else {
-        fmt.Println("Criptomoedas carregadas:", cryptos) // Debug
+        fmt.Println("Criptomoedas carregadas:", cryptos)
     }
+
+    go server.UpdateCryptosPeriodically()
+    go server.BroadcastUpdates()
 
     http.HandleFunc("/", server.VerifyIfAPIIsOnline)
     http.HandleFunc("/cryptos", server.DisplayCryptos)
