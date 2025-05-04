@@ -21,10 +21,12 @@ type Crypto struct {
 	MarketCapRank int     `json:"market_cap_rank"`
 }
 
-const baseAPIURL = "https://api.coingecko.com/api/v3/"
+const baseCoinGeckoAPIURL = "https://api.coingecko.com/api/v3/"
+const baseCurrencyAPIURL = "https://api.currencylayer.com/live?"
 
 var (
 	coingeckoAPIKey string
+	currencylayerAPIKey string
 	cryptos []Crypto
 	clients = make(map[*websocket.Conn]bool)
 	broadcast = make(chan []Crypto)
@@ -42,8 +44,14 @@ func loadAPIKey() {
 		return
 	}
 
-	coingeckoAPIKey = os.Getenv("API_KEY")
+	coingeckoAPIKey = os.Getenv("COINGECKO_API_KEY")
 	if coingeckoAPIKey == "" {
+		fmt.Println("API_KEY não encontrada no .env!")
+		os.Exit(1)
+	}
+
+	currencylayerAPIKey = os.Getenv("CURRENCY_LAYER_API")
+	if currencylayerAPIKey == "" {
 		fmt.Println("API_KEY não encontrada no .env!")
 		os.Exit(1)
 	}
@@ -51,7 +59,7 @@ func loadAPIKey() {
 
 func getCoinGeckoPing() (string, error) {
 	ping_rote := "ping"
-	req, err := http.NewRequest("GET", baseAPIURL+ping_rote, nil)
+	req, err := http.NewRequest("GET", baseCoinGeckoAPIURL+ping_rote, nil)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +82,7 @@ func getCoinGeckoPing() (string, error) {
 
 func getTopCryptos() ([]Crypto, error) {
 	marketRote := "coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1"
-	req, err := http.NewRequest("GET", baseAPIURL+marketRote, nil)
+	req, err := http.NewRequest("GET", baseCoinGeckoAPIURL+marketRote, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +180,61 @@ func verifyIfAPIIsOnline(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, coinGeckoResponse)
 }
 
+func getExchangeRate(currency string) (float64, error) {
+	url := fmt.Sprintf("%saccess_key=%s&currencies=%s", baseCurrencyAPIURL, currencylayerAPIKey, currency)
 
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	var result map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, err
+	}
+
+	quotes, ok := result["quotes"].(map[string]interface{})
+	if !ok {
+		return 0, fmt.Errorf("erro ao obter taxa de câmbio")
+	}
+
+	rateKey := "USD" + currency
+	rate, ok := quotes[rateKey].(float64)
+	if !ok {
+		return 0, fmt.Errorf("moeda não encontrada")
+	}
+
+	return rate, nil
+}
 
 func displayCryptos(w http.ResponseWriter, r *http.Request) {
+	currency := r.URL.Query().Get("currency")
+	if currency == "" || currency == "USD" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(cryptos)
+		return
+	}
+
+	exchangeRate, err := getExchangeRate(currency)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Erro ao obter taxa de câmbio para %s", currency), http.StatusInternalServerError)
+		return
+	}
+
+	var convertedCryptos []Crypto
+	for _, crypto := range cryptos {
+		convertedCryptos = append(convertedCryptos, Crypto{
+			Name: crypto.Name,
+			Symbol: crypto.Symbol,
+			MarketCap: crypto.MarketCap * exchangeRate,
+			CurrentPrice: crypto.CurrentPrice * exchangeRate,
+			MarketCapRank: crypto.MarketCapRank,
+		})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cryptos)
+	json.NewEncoder(w).Encode(convertedCryptos)
 }
 
 func main() {
@@ -194,6 +252,7 @@ func main() {
 	http.HandleFunc("/", verifyIfAPIIsOnline)
 	http.HandleFunc("/cryptos", displayCryptos)
 	http.HandleFunc("/ws", handleWebSocketConnections)
+
 	fmt.Println("Servidor rodando em http://localhost:8000")
 	http.ListenAndServe(":8000", nil)
 }
