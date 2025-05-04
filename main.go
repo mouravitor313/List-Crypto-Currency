@@ -6,8 +6,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 )
 
@@ -21,7 +23,17 @@ type Crypto struct {
 
 const baseAPIURL = "https://api.coingecko.com/api/v3/"
 
-var apiKey string
+var (
+	coingeckoAPIKey string
+	cryptos []Crypto
+	clients = make(map[*websocket.Conn]bool)
+	broadcast = make(chan []Crypto)
+	mu sync.Mutex
+)
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}
 
 func loadAPIKey() {
 	err := godotenv.Load()
@@ -30,8 +42,8 @@ func loadAPIKey() {
 		return
 	}
 
-	apiKey = os.Getenv("API_KEY")
-	if apiKey == "" {
+	coingeckoAPIKey = os.Getenv("API_KEY")
+	if coingeckoAPIKey == "" {
 		fmt.Println("API_KEY não encontrada no .env!")
 		os.Exit(1)
 	}
@@ -43,7 +55,7 @@ func getCoinGeckoPing() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("x-cg-demo-api-key", apiKey)
+	req.Header.Set("x-cg-demo-api-key", coingeckoAPIKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -66,11 +78,10 @@ func getTopCryptos() ([]Crypto, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("x-cg-demo-api-key", apiKey)
+	req.Header.Set("x-cg-demo-api-key", coingeckoAPIKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	fmt.Println("status_code:",resp.StatusCode)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +104,64 @@ func getTopCryptos() ([]Crypto, error) {
 	return cryptos, nil
 }
 
+func updateCryptosPeriodically() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			fmt.Println("Atualizando lista de criptos...")
+			newCryptos, err := getTopCryptos()
+			if err == nil {
+				mu.Lock()
+				cryptos = newCryptos
+				mu.Unlock()
+				broadcast <- cryptos
+			} else {
+				fmt.Println("Erro ao atualizar criptomoedas:", err)
+			}
+
+		}
+	}
+}
+
+func handleWebSocketConnections(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Erro ao conectar Websocket:", err)
+		return
+	}
+	defer conn.Close()
+
+	mu.Lock()
+	clients[conn] = true
+	mu.Unlock()
+
+	for {
+		select {
+		case data := <- broadcast:
+			conn.WriteJSON(data)
+		}
+	}
+}
+
+func broadcastUpdates() {
+	for {
+		data := <-broadcast
+		mu.Lock()
+		for client := range clients {
+			err := client.WriteJSON(data)
+			if err != nil {
+				fmt.Println("Erro ao enviar atualização:", err)
+				client.Close()
+				delete(clients, client)
+			}
+		}
+		mu.Unlock()
+	}
+}
+
 func verifyIfAPIIsOnline(w http.ResponseWriter, r *http.Request) {
 	coinGeckoResponse, err := getCoinGeckoPing()
 	if err != nil {
@@ -103,22 +172,28 @@ func verifyIfAPIIsOnline(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, coinGeckoResponse)
 }
 
-func displayCryptos(w http.ResponseWriter, r *http.Request) {
-	cryptos, err := getTopCryptos()
-	if err != nil {
-		fmt.Println("Erro:", err)
-		http.Error(w, "Erro ao obter criptomoedas", http.StatusInternalServerError)
-		return
-	}
 
+
+func displayCryptos(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(cryptos)
 }
 
 func main() {
 	loadAPIKey()
+	initialCryptos, err := getTopCryptos()
+	if err == nil {
+		cryptos = initialCryptos
+	} else {
+		fmt.Println("Erro ao obter criptos:", err)
+	}
+
+	go updateCryptosPeriodically()
+	go broadcastUpdates()
+
 	http.HandleFunc("/", verifyIfAPIIsOnline)
 	http.HandleFunc("/cryptos", displayCryptos)
+	http.HandleFunc("/ws", handleWebSocketConnections)
 	fmt.Println("Servidor rodando em http://localhost:8000")
 	http.ListenAndServe(":8000", nil)
 }
