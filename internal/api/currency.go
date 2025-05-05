@@ -8,7 +8,7 @@ import (
     "github.com/mouravitor313/List-Crypto-Currency/internal/config"
 )
 
-const baseCurrencyAPIURL = "https://api.currencylayer.com/live?"
+var baseCurrencyAPIURL = "https://api.currencylayer.com/live?"
 
 func GetExchangeRate(currency string) (float64, error) {
     url := fmt.Sprintf("%saccess_key=%s&currencies=%s", baseCurrencyAPIURL, config.CurrencyLayerAPIKey, currency)

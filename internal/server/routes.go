@@ -10,6 +10,10 @@ import (
 )
 
 var cryptos []models.Crypto
+var (
+    getTopCryptos = api.GetTopCryptos
+    getExchangeRate = api.GetExchangeRate
+)
 
 func VerifyIfAPIIsOnline(w http.ResponseWriter, r *http.Request) {
     fmt.Fprintln(w, "API está online")
@@ -17,7 +21,7 @@ func VerifyIfAPIIsOnline(w http.ResponseWriter, r *http.Request) {
 
 func DisplayCryptos(w http.ResponseWriter, r *http.Request) {
     var err error
-    cryptos, err = api.GetTopCryptos()
+    cryptos, err = getTopCryptos()
     if err != nil {
         http.Error(w, "Erro ao obter criptos", http.StatusInternalServerError)
         return
@@ -32,7 +36,7 @@ func DisplayCryptos(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    exchangeRate, err := api.GetExchangeRate(currency)
+    exchangeRate, err := getExchangeRate(currency)
     if err != nil {
         http.Error(w, "Erro ao obter taxa de câmbio", http.StatusInternalServerError)
         return
