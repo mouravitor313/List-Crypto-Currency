@@ -26,7 +26,9 @@ func DisplayCryptos(w http.ResponseWriter, r *http.Request) {
     currency := r.URL.Query().Get("currency")
     if currency == "" || currency == "USD" {
         w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(cryptos)
+        if err := json.NewEncoder(w).Encode(cryptos); err != nil {
+            http.Error(w, "fail to serialize response", http.StatusInternalServerError)
+        }
         return
     }
 
@@ -48,5 +50,7 @@ func DisplayCryptos(w http.ResponseWriter, r *http.Request) {
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(convertedCryptos)
+    if err := json.NewEncoder(w).Encode(convertedCryptos); err != nil {
+        http.Error(w, "fail to serialize response", http.StatusInternalServerError)
+    }
 }

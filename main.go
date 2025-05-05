@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+    "log"
 	"net/http"
 
-	"github.com/mouravitor313/List-Crypto-Currency/internal/api"
+	"github.com/mouravitor313/List-Crypto-Currency/internal/service"
 	"github.com/mouravitor313/List-Crypto-Currency/internal/config"
 	"github.com/mouravitor313/List-Crypto-Currency/internal/models"
 	"github.com/mouravitor313/List-Crypto-Currency/internal/server"
@@ -14,10 +15,17 @@ var cryptos []models.Crypto
 
 func main() {
     config.LoadAPIKey()
+    if err := config.LoadAPIKey(); err != nil {
+        log.Fatalf("Load API key fail: %v", err)
+    }
+
     config.InitRedis()
+    if err := config.InitRedis(); err != nil {
+        log.Fatalf("Fail to init Redis: %v", err)
+    }
 
     var err error
-    cryptos, err = api.GetTopCryptos()
+    cryptos, err = service.FetchTopCryptos()
     if err != nil {
         fmt.Println("Erro ao obter criptos:", err)
     } else {
