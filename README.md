@@ -1,57 +1,73 @@
-# List Crypto Currency
+# ✨ List Crypto Currency
 
-Este documento descreve como configurar e executar o projeto List Crypto Currency, desde a instalação do Go em diferentes sistemas operacionais, configuração de dependências, uso do Redis como cache, até acesso às rotas HTTP e conexão WebSocket pelo Postman.
+## Introdução
+
+Imagine ter ao alcance de um clique os **10 ativos digitais** com maior valor de mercado, sempre atualizados em tempo real e prontos para integrar seu dashboard ou aplicação.
+O **List Crypto Currency** nasceu desse desafio: explorar e aprofundar meus conhecimentos em **Go** enquanto entrego uma ferramenta robusta de consulta e distribuição de dados de criptomoedas. Com ele, você:
+
+- Acessa as top 10 moedas por Market Cap via [CoinGecko API](https://www.coingecko.com/en/api) e [CurrencyLayer API](https://currencylayer.com/documentation)
+- Armazena e serve respostas em cache com **Redis**
+- Atualiza automaticamente a cada minuto
+- Suporta múltiplas interfaces de consumo:
+  - REST HTTP
+  - WebSocket (para streaming em tempo real)
+  - gRPC (para integrações performáticas)
+
+Tudo isso construído em **Go 1.24** com as seguintes bibliotecas e stacks:
+
+- [Gorilla WebSocket](https://github.com/gorilla/websocket) – streaming bidirecional
+- [go-redis/redis v9](https://github.com/redis/go-redis) – cache e pub/sub
+- [joho/godotenv](https://github.com/joho/godotenv) – variáveis de ambiente
+- [gRPC-Go](https://grpc.io/docs/languages/go/) + [Protobuf](https://developers.google.com/protocol-buffers) – RPC de alta performance
 
 ---
 
-## 1. Pré-requisitos
+## Documentação
 
-*   Sistema operacional: macOS, Linux ou Windows
-*   Go versão `1.24.2`
-*   Redis (você pode usar localmente ou através de container)
-*   `git`
-*   Postman (para testes de HTTP e WebSocket)
+Este guia passo a passo vai ajudá-lo a clonar, configurar e executar o projeto **List Crypto Currency** em macOS, Linux ou Windows.
+
+### 1. Pré-requisitos
+
+- 🐹 **Go `1.24.2`** ou superior ([download](https://go.dev/dl/))
+- 🧠 **Redis** (local, Docker ou serviço)
+- 🧬 **Git**
+- 🧪 **Postman** ou similar (para testes HTTP/WebSocket)
+- Optional: **WSL** no Windows
 
 ---
 
-## 2. Instalação do Go
+### 2. Instalação do Go
 
-### macOS
+#### macOS
 
 ```bash
 brew install go@1.24
+echo 'export PATH="$PATH:/usr/local/opt/go@1.24/bin"' >> ~/.zshrc
 ```
 
-> Adicione ao `PATH` (no `.zshrc` ou `.bash_profile`):
-> ```bash
-> export PATH="$PATH:/usr/local/opt/go@1.24/bin"
-> ```
-
-### Linux (Debian/Ubuntu)
+#### Linux (Debian/Ubuntu)
 
 ```bash
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
+echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc
 ```
 
-> No `~/.bashrc`:
-> ```bash
-> export PATH="$PATH:/usr/local/go/bin"
-> ```
+#### Windows
 
-### Windows
+1.  Baixe o instalador em [go.dev/dl](https://go.dev/dl/)
+2.  Siga o wizard
+3.  Verifique:
 
-1.  Baixe o instalador MSI em [https://go.dev/dl/](https://go.dev/dl/)
-2.  Execute o instalador e siga as instruções
-3.  Verifique no PowerShell:
+    ```powershell
+    go version
+    ```
 
-```powershell
-go version
-```
+> Se usar WSL, trate como Linux acima.
 
 ---
 
-## 3. Clonar o repositório
+### 3. Clonagem do repositório
 
 ```bash
 git clone https://github.com/mouravitor313/List-Crypto-Currency.git
@@ -60,184 +76,145 @@ cd List-Crypto-Currency
 
 ---
 
-## 4. Configuração das variáveis de ambiente
+### 4. Variáveis de Ambiente
 
-Crie um arquivo `.env` na raiz do projeto com as chaves de API:
+Crie um arquivo `.env` na raiz:
 
-```dotenv
-COINGECKO_API_KEY=your_coin_gecko_api_key
-CURRENCY_LAYER_API=your_currency_layer_api_key
-REDIS_ADDR=localhost:6379         # opcional, caso seu init leu esta chave
-REDIS_PASSWORD=                   # opcional
+```env
+COINGECKO_API_KEY=your_coin_gecko_api_key      # https://www.coingecko.com/en/api
+CURRENCY_LAYER_API=your_currency_layer_api_key  # https://currencylayer.com/documentation
+REDIS_ADDR=localhost:6379
+REDIS_PASSWORD=
 ```
 
-O código em `internal/config/env.go` faz o carregamento dessas variáveis usando `github.com/joho/godotenv`:
-
-```go
-err := godotenv.Load()
-CoinGeckoAPIKey = os.Getenv("COINGECKO_API_KEY")
-CurrencyLayerAPIKey = os.Getenv("CURRENCY_LAYER_API")
-```
-
-> **Atenção**: Certifique-se de que o `.env` está no `.gitignore` para não vazar suas chaves.
+> ⚠️ Lembre-se de incluir `.env` no `.gitignore`.
 
 ---
 
-## 5. Instalação de dependências Go
-
-No diretório raiz do projeto, execute:
+### 5. Instalação das Dependências
 
 ```bash
 go mod download
 ```
 
-Isso instalará:
+Principais libs:
 
-*   `github.com/gorilla/websocket`
-*   `github.com/joho/godotenv`
-*   `github.com/redis/go-redis/v9`
+- `github.com/gorilla/websocket`
+- `github.com/redis/go-redis/v9`
+- `github.com/joho/godotenv`
 
 ---
 
-## 6. Configuração e inicialização do Redis
+### 6. Configuração do Redis
 
-### Opção 1: Instalar localmente
-
-#### macOS (Homebrew)
+#### macOS
 
 ```bash
 brew install redis
 brew services start redis
 ```
 
-#### Linux (Debian/Ubuntu)
+#### Linux
 
 ```bash
 sudo apt-get install redis-server
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
+sudo systemctl enable --now redis-server
 ```
 
-### Opção 2: Usar Docker
+#### Docker
 
 ```bash
 docker run -d --name redis -p 6379:6379 redis:latest
 ```
 
-No código, a inicialização do Redis é feita em `config.InitRedis()` (em `internal/config/config.go`), que deve usar as variáveis:
-
-(O ideal)
-```go
-client := redis.NewClient(&redis.Options{
-    Addr:     os.Getenv("REDIS_ADDR"),
-    Password: os.Getenv("REDIS_PASSWORD"),
-    DB:       0,
-})
-err := client.Ping(context.Background()).Err()
-```
-
-(Presente no meu código / Setup mais rápido para rodar localmente)
-```go
-RedisClient = redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
-	})
-
-	_, err := RedisClient.Ping(context.Background()).Result()
-```
-
 ---
 
-## 7. Rodando a API
-
-No terminal:
+### 7. Executar o Servidor
 
 ```bash
 go run main.go
 ```
 
-**Saída esperada:**
+Saída esperada:
 
 ```text
-Criptomoedas carregadas: [{...}]
-Servidor rodando em http://localhost:8000
+💹 Criptomoedas carregadas: [...]
+🌐 Servidor rodando em http://localhost:8000
 ```
 
 ---
 
-## 8. Rotas HTTP
+### 8. Testes HTTP com REST
 
-### 8.1. Verificar status da API
+-   **Status da API**
 
-**Método:** `GET`
+    ```http
+    GET http://localhost:8000/
+    ```
 
-**URL:** <http://localhost:8000/>
+    Retorna: `API está online`
 
-**Descrição:** Retorna um texto simples indicando que a API está online.
+-   **Listar Criptomoedas**
 
-**Resposta esperada:**
+    ```http
+    GET http://localhost:8000/cryptos?currency=EUR
+    ```
 
-```text
-API está online
-```
+    -   `currency` (opcional): código ISO (ex: `USD`, `BRL`).
 
-### 8.2. Listar criptomoedas
-
-**Método:** `GET`
-
-**URL padrão:** <http://localhost:8000/cryptos>
-
-**Parâmetros de query:**
-
-*   `currency` (opcional): código da moeda destino (ex: `EUR`, `BRL`). Default = `USD`.
-
-#### 8.2.1. Exemplo sem currency
+Exemplos com `curl`:
 
 ```bash
 curl http://localhost:8000/cryptos
+curl "http://localhost:8000/cryptos?currency=BRL"
 ```
 
-**Resposta JSON:**
+---
 
-```json
-[
-    {
-        "name": "Bitcoin",
-        "symbol": "BTC",
-        "market_cap": 500000000000,
-        "current_price": 27000,
-        "market_cap_rank": 1
-    },
-    ...
-]
-```
+### 9. Testes via WebSocket
 
-#### 8.2.2. Exemplo com currency=EUR
+-   **Endpoint:** `ws://localhost:8000/ws`
+-   No Postman:
+    1.  `New` → `WebSocket Request`
+    2.  Insira `ws://localhost:8000/ws`
+    3.  `Connect` e observe JSONs de atualização em tempo real.
+
+---
+
+### 10. Integração gRPC
+
+#### Instalação de Ferramentas (Linux/macOS)
 
 ```bash
-curl "http://localhost:8000/cryptos?currency=EUR"
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+# macOS
+brew install protobuf
+# Linux
+sudo apt-get install protobuf-compiler
 ```
 
-**Resposta JSON:** valores convertidos para Euro.
+#### Gerar Bindings
+
+```bash
+protoc --go_out=. --go-grpc_out=. \
+  --go_opt=paths=source_relative \
+  --go-grpc_opt=paths=source_relative \
+  internal/proto/crypto.proto
+```
+
+#### Teste com grpcurl
+
+```bash
+grpcurl -plaintext -d '{"currency":"USD"}' localhost:50051 crypto.CryptoService/GetTopCryptos
+```
+
+No Windows, garanta que `protoc.exe` e `$(go env GOPATH)/bin` estejam no `PATH` e siga passos similares.
 
 ---
 
-## 9. Conexão WebSocket
-
-**Endpoint:** `ws://localhost:8000/ws`
-
-**Descrição:** Recebe atualizações periódicas de preços.
-
-**Como testar no Postman:**
-
-1.  Abra o Postman.
-2.  Clique em `New` > `WebSocket Request`.
-3.  Insira a URL `ws://localhost:8000/ws`.
-4.  Clique em `Connect`.
-5.  Você verá mensagens `JSON` de atualização de criptomoedas.
-
----
-
-## 10. Estrutura de Pastas
+### 11. Estrutura do Projeto
 
 ```text
 .
@@ -246,24 +223,23 @@ curl "http://localhost:8000/cryptos?currency=EUR"
 ├── go.sum
 ├── internal
 │   ├── api
-│   │   ├── coingecko.go
-│   │   ├── coingecko_test.go
-│   │   ├── currency.go
-│   │   └── currency_test.go
 │   ├── config
-│   │   ├── config.go
-│   │   └── env.go
 │   ├── models
-│   │   └── crypto.go
 │   ├── proto
-│   │   └── crypto.proto
 │   ├── server
-│   │   ├── routes.go
-│   │   ├── routes_test.go
-│   │   ├── update.go
-│   │   └── websocket.go
 │   └── service
-│       └── crypto.go
 └── main.go
 ```
+
 ---
+
+## 🎉 Conclusão
+
+Com este setup, você terá uma API de criptomoedas em **Go** com:
+
+- Cache eficiente em **Redis**
+- Atualizações automáticas
+- Múltiplas interfaces (REST, WebSocket, gRPC)
+- Facilidade de integração em qualquer stack
+
+Pronto para agregar **dados em tempo real** ao seu próximo projeto!
