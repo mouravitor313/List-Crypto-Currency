@@ -39,7 +39,6 @@ func main() {
         }
     }()
 
-    config.LoadAPIKey()
     if err := config.LoadAPIKey(); err != nil {
         log.Fatalf("Load API key fail: %v", err)
     }
@@ -64,5 +63,8 @@ func main() {
     http.HandleFunc("/ws", server.HandleWebSocketConnections)
 
     fmt.Println("Servidor rodando em http://localhost:8000")
-    http.ListenAndServe(":8000", nil)
+    err = http.ListenAndServe(":8000", nil)
+    if err != nil {
+        log.Fatalf("Fail to start HTTP server: %v", err)
+    }
 }
