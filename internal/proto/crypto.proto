@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package crypto;
+
+option go_package = "github.com/mouravitor313/List-Crypto-Currency/internal/proto";
+
+service CryptoService {
+    rpc GetTopCryptos (CryptoRequest) returns (CryptoResponse);
+    rpc StreamCryptoUpdate (stream CryptoRequest) returns (stream CryptoResponse);
+}
+
+message CryptoRequest {
+    string currency = 1;
+}
+
+message CryptoResponse {
+    repeated Crypto cryptos = 1;
+}
+
+message Crypto {
+    string name = 1;
+    string symbol = 2;
+    double marketCap = 3;
+    double currentPrice = 4;
+    int32 marketCapRank = 5;
+}
