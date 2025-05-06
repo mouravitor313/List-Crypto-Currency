@@ -55,15 +55,7 @@ echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc
 
 #### Windows
 
-1.  Baixe o instalador em [go.dev/dl](https://go.dev/dl/)
-2.  Siga o wizard
-3.  Verifique:
-
-    ```powershell
-    go version
-    ```
-
-> Se usar WSL, trate como Linux acima.
+Instalar o [WSL (Windows Subsystem for Linux)](https://learn.microsoft.com/pt-br/windows/wsl/install) com uma distro Linux (ex: Ubuntu) e seguir o passo a passo para execução no Linux.
 
 ---
 
@@ -209,9 +201,6 @@ protoc --go_out=. --go-grpc_out=. \
 ```bash
 grpcurl -plaintext -d '{"currency":"USD"}' localhost:50051 crypto.CryptoService/GetTopCryptos
 ```
-
-No Windows, garanta que `protoc.exe` e `$(go env GOPATH)/bin` estejam no `PATH` e siga passos similares.
-
 ---
 
 ### 11. Estrutura do Projeto
