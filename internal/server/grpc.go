@@ -19,17 +19,36 @@ func (s *CryptoServer) GetTopCryptos(ctx context.Context, req *proto.CryptoReque
     }
 
     var response proto.CryptoResponse
-    for _, crypto := range cryptos {
-        response.Cryptos = append(response.Cryptos, &proto.Crypto{
-            Name:          crypto.Name,
-            Symbol:        crypto.Symbol,
-            MarketCap:     crypto.MarketCap,
-            CurrentPrice:  crypto.CurrentPrice,
-            MarketCapRank: int32(crypto.MarketCapRank),
-        })
-    }
+	currency := req.Currency
+	if currency != "" && currency != "USD" {
+		exchangeRate, err := api.GetExchangeRate(currency)
+		if err != nil {
+			return nil, err
+		}
 
-    return &response, nil
+		for _, crypto := range cryptos {
+            response.Cryptos = append(response.Cryptos, &proto.Crypto{
+                Name:          crypto.Name,
+                Symbol:        crypto.Symbol,
+                MarketCap:     crypto.MarketCap * exchangeRate,
+                CurrentPrice:  crypto.CurrentPrice * exchangeRate,
+                MarketCapRank: int32(crypto.MarketCapRank),
+            })
+        }
+    } else {
+        for _, crypto := range cryptos {
+            response.Cryptos = append(response.Cryptos, &proto.Crypto{
+                Name:          crypto.Name,
+                Symbol:        crypto.Symbol,
+                MarketCap:     crypto.MarketCap,
+                CurrentPrice:  crypto.CurrentPrice,
+                MarketCapRank: int32(crypto.MarketCapRank),
+            })
+		}
+	}
+
+	return &response, nil
+
 }
 
 func (s *CryptoServer) StreamCryptoUpdates(req *proto.CryptoRequest, stream proto.CryptoService_StreamCryptoUpdateServer) error {
