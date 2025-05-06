@@ -238,6 +238,8 @@ curl "http://localhost:8000/cryptos?currency=EUR"
 ---
 
 ## 10. Estrutura de Pastas
+
+```text
 .
 ├── README.md
 ├── go.mod
@@ -263,4 +265,5 @@ curl "http://localhost:8000/cryptos?currency=EUR"
 │   └── service
 │       └── crypto.go
 └── main.go
+```
 ---
