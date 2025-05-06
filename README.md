@@ -1,10 +1,10 @@
-# List Crypto Currency - Documentação de Execução
+# List Crypto Currency
 Este documento descreve como configurar e executar o projeto List Crypto Currency, desde a instalação do Go em diferentes sistemas operacionais, configuração de dependências, uso do Redis como cache, até acesso às rotas HTTP e conexão WebSocket pelo Postman.
 
 
 ---
 
-1. Pré-requisitos
+## 1. Pré-requisitos
 
 Sistema operacional: macOS, Linux ou Windows
 
@@ -20,22 +20,22 @@ Postman (para testes de HTTP e WebSocket)
 
 ---
 
-2. Instalação do Go
+## 2. Instalação do Go
 
-macOS
+#### macOS
 
 brew install go@1.24
 # Adicione ao PATH (no .zshrc ou .bash_profile):
 export PATH="$PATH:/usr/local/opt/go@1.24/bin"
 
-Linux (Debian/Ubuntu)
+#### Linux (Debian/Ubuntu)
 
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
 # No ~/.bashrc:
 export PATH="$PATH:/usr/local/go/bin"
 
-Windows
+#### Windows
 
 1. Baixe o instalador MSI em https://go.dev/dl/
 
@@ -52,7 +52,7 @@ go version
 
 ---
 
-3. Clonar o repositório
+## 3. Clonar o repositório
 
 git clone https://github.com/mouravitor313/List-Crypto-Currency.git
 cd List-Crypto-Currency
@@ -60,7 +60,7 @@ cd List-Crypto-Currency
 
 ---
 
-4. Configuração das variáveis de ambiente
+## 4. Configuração das variáveis de ambiente
 
 Crie um arquivo .env na raiz do projeto com as chaves de API:
 
@@ -82,7 +82,7 @@ CurrencyLayerAPIKey = os.Getenv("CURRENCY_LAYER_API")
 
 ---
 
-5. Instalação de dependências Go
+## 5. Instalação de dependências Go
 
 No diretório raiz do projeto, execute:
 
@@ -100,19 +100,19 @@ github.com/redis/go-redis/v9
 
 ---
 
-6. Configuração e inicialização do Redis
+## 6. Configuração e inicialização do Redis
 
-Opção 1: Instalar localmente
+### Opção 1: Instalar localmente
 
-# macOS (Homebrew)
+#### macOS (Homebrew)
 brew install redis
 brew services start redis
-# Linux (Debian/Ubuntu)
+#### Linux (Debian/Ubuntu)
 sudo apt-get install redis-server
 sudo systemctl enable redis-server
 sudo systemctl start redis-server
 
-Opção 2: Usar Docker
+### Opção 2: Usar Docker
 
 docker run -d --name redis -p 6379:6379 redis:latest
 
@@ -125,14 +125,11 @@ client := redis.NewClient(&redis.Options{
 })
 err := client.Ping(context.Background()).Err()
 
-> Observação: Se o arquivo internal/config/redis.go não existir, crie-o conforme exemplo acima.
-
-
 
 
 ---
 
-7. Rodando a API
+## 7. Rodando a API
 
 No terminal:
 
@@ -146,9 +143,9 @@ Servidor rodando em http://localhost:8000
 
 ---
 
-8. Rotas HTTP
+## 8. Rotas HTTP
 
-8.1. Verificar status da API
+### 8.1. Verificar status da API
 
 Método: GET
 
@@ -164,7 +161,7 @@ API está online
 
 ---
 
-8.2. Listar criptomoedas
+### 8.2. Listar criptomoedas
 
 Método: GET
 
@@ -176,7 +173,7 @@ currency (opcional): código da moeda destino (ex: EUR, BRL). Default = USD.
 
 
 
-8.2.1. Exemplo sem currency
+#### 8.2.1. Exemplo sem currency
 
 curl http://localhost:8000/cryptos
 
@@ -193,7 +190,7 @@ Resposta JSON:
   ...
 ]
 
-8.2.2. Exemplo com currency=EUR
+#### 8.2.2. Exemplo com currency=EUR
 
 curl "http://localhost:8000/cryptos?currency=EUR"
 
@@ -202,7 +199,7 @@ Resposta JSON: valores convertidos para Euro.
 
 ---
 
-9. Conexão WebSocket
+## 9. Conexão WebSocket
 
 Endpoint: ws://localhost:8000/ws
 
@@ -228,7 +225,7 @@ Como testar no Postman:
 
 ---
 
-10. Estrutura de Pastas
+## 10. Estrutura de Pastas
 
 
 
