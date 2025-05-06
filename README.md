@@ -25,14 +25,14 @@ Postman (para testes de HTTP e WebSocket)
 #### macOS
 
 brew install go@1.24
-# Adicione ao PATH (no .zshrc ou .bash_profile):
+> Adicione ao PATH (no .zshrc ou .bash_profile):
 export PATH="$PATH:/usr/local/opt/go@1.24/bin"
 
 #### Linux (Debian/Ubuntu)
 
 wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
-# No ~/.bashrc:
+> No ~/.bashrc:
 export PATH="$PATH:/usr/local/go/bin"
 
 #### Windows
