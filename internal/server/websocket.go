@@ -10,8 +10,13 @@ import (
     "github.com/mouravitor313/List-Crypto-Currency/internal/models"
 )
 
+type ClientInfo struct {
+    Conn *websocket.Conn
+    Currency string
+}
+
 var (
-    clients   = make(map[*websocket.Conn]bool)
+    clients   []ClientInfo
     broadcast = make(chan []models.Crypto)
     mu        sync.Mutex
     upgrader  = websocket.Upgrader{
@@ -39,7 +44,7 @@ func HandleWebSocketConnections(w http.ResponseWriter, r *http.Request) {
     }
 
     mu.Lock()
-    clients[conn] = true
+    clients = append(clients, ClientInfo{Conn: conn, Currency: currency})
     mu.Unlock()
 
     for {

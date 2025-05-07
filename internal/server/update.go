@@ -7,6 +7,15 @@ import (
     "github.com/mouravitor313/List-Crypto-Currency/internal/models"
 )
 
+func removeClient(clientList []ClientInfo, clientToRemove ClientInfo) []ClientInfo {
+    var newClients []ClientInfo
+    for _, c := range clientList {
+        if c.Conn != clientToRemove.Conn {
+            newClients = append(newClients, c)
+        }
+    }
+    return newClients
+}
 
 func UpdateCryptosPeriodically() {
     ticker := time.NewTicker(1 * time.Minute)
@@ -34,10 +43,9 @@ func BroadcastUpdates() {
         data := <-broadcast
 
         mu.Lock()
-        for client := range clients {
-            currency := client.RemoteAddr().String()
+        for _, client := range clients {
 
-            exchangeRate, err := api.GetExchangeRate(currency)
+            exchangeRate, err := api.GetExchangeRate(client.Currency)
             if err != nil {
                 fmt.Println("Erro ao obter taxa de câmbio:", err)
                 exchangeRate = 1.0
@@ -54,11 +62,11 @@ func BroadcastUpdates() {
                 })
             }
 
-            err = client.WriteJSON(convertedCryptos)
+            err = client.Conn.WriteJSON(convertedCryptos)
             if err != nil {
                 fmt.Println("Erro ao enviar atualização:", err)
-                client.Close()
-                delete(clients, client)
+                client.Conn.Close()
+                clients = removeClient(clients, client)
             }
         }
         mu.Unlock()
