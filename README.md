@@ -2,12 +2,11 @@
 
 ## Introdução
 
-Imagine ter ao alcance de um clique os **10 ativos digitais** com maior valor de mercado, sempre atualizados em tempo real e prontos para integrar seu dashboard ou aplicação.
-O **List Crypto Currency** nasceu desse desafio: explorar e aprofundar meus conhecimentos em **Go** enquanto entrego uma ferramenta robusta de consulta e distribuição de dados de criptomoedas. Com ele, você:
+List Crypto Currency é uma API em Go que fornece, em tempo real, as 10 principais criptomoedas por valor de mercado, com suporte a múltiplas interfaces (REST, WebSocket e gRPC) e cache em Redis. Essa API é capaz de:
 
-- Acessa as top 10 moedas por Market Cap via [CoinGecko API](https://www.coingecko.com/en/api) e [CurrencyLayer API](https://currencylayer.com/documentation)
-- Armazena e serve respostas em cache com **Redis**
-- Atualiza automaticamente a cada minuto
+- Acessar as top 10 moedas por Market Cap via [CoinGecko API](https://www.coingecko.com/en/api) e [CurrencyLayer API](https://currencylayer.com/documentation)
+- Armazenar e servir respostas em cache com **Redis**
+- Atualizar automaticamente a cada minuto
 - Suporta múltiplas interfaces de consumo:
   - REST HTTP
   - WebSocket (para streaming em tempo real)
@@ -248,5 +247,11 @@ Com este setup, você terá uma API de criptomoedas em **Go** com:
 - Atualizações automáticas
 - Múltiplas interfaces (REST, WebSocket, gRPC)
 - Facilidade de integração em qualquer stack
+
+## Contatos:
+
+[E-mail](dev.vitormoura@gmail.com)
+
+[LinkedIn](https://www.linkedin.com/in/v%C3%ADtor-moura/)
 
 Pronto para agregar **dados em tempo real** ao seu próximo projeto!
