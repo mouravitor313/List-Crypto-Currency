@@ -32,6 +32,8 @@ Este guia passo a passo vai ajudá-lo a clonar, configurar e executar o projeto 
 - 🧠 **Redis** (local, Docker ou serviço)
 - 🧬 **Git**
 - 🧪 **Postman** ou similar (para testes HTTP/WebSocket)
+- **CoinGecko** API Key ([aqui](https://www.coingecko.com/en/api))
+- **CurrencyLayer** API Key ([aqui](https://currencylayer.com/documentation))
 - Optional: **WSL** no Windows
 
 ---
@@ -48,9 +50,19 @@ echo 'export PATH="$PATH:/usr/local/opt/go@1.24/bin"' >> ~/.zshrc
 #### Linux (Debian/Ubuntu)
 
 ```bash
-wget https://go.dev/dl/go1.24.2.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.24.2.linux-amd64.tar.gz
+rm -rf /usr/local/go
+sudo apt-get update
+sudo apt install golang-go
 echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.bashrc
+```
+
+**ou caso não funcione:**
+
+```bash
+rm -rf /usr/local/go
+sudo apt-get update
+sudo apt install golang-go
+echo 'export PATH="$PATH:/usr/local/go/bin"' >> ~/.zshrc
 ```
 
 #### Windows
@@ -73,13 +85,14 @@ cd List-Crypto-Currency
 Crie um arquivo `.env` na raiz:
 
 ```env
-COINGECKO_API_KEY=your_coin_gecko_api_key      # https://www.coingecko.com/en/api
-CURRENCY_LAYER_API=your_currency_layer_api_key  # https://currencylayer.com/documentation
+COINGECKO_API_KEY=your_coin_gecko_api_key      # garantir sua chave api em: https://www.coingecko.com/en/api
+CURRENCY_LAYER_API=your_currency_layer_api_key  # garantir sua chave api em: https://currencylayer.com/documentation
+# Opcional caso queira configurar o Redis mais a fundo, garantindo segurança:
 REDIS_ADDR=localhost:6379
 REDIS_PASSWORD=
 ```
 
-> ⚠️ Lembre-se de incluir `.env` no `.gitignore`.
+> ⚠️ Lembre-se de incluir suas chaves de API substituindo "your_coin_gecko_api_key" e "your_currency_layer_api_key".
 
 ---
 
@@ -165,10 +178,10 @@ curl "http://localhost:8000/cryptos?currency=BRL"
 
 ### 9. Testes via WebSocket
 
--   **Endpoint:** `ws://localhost:8000/ws`
+-   **Endpoint:** `ws://localhost:8000/ws?currency=USD` (dica): subistitua `USD` pelo código ISO da moeda de preferência (ex: `EUR`, `BRL`)
 -   No Postman:
     1.  `New` → `WebSocket Request`
-    2.  Insira `ws://localhost:8000/ws`
+    2.  Insira `ws://localhost:8000/ws?currency=USD`
     3.  `Connect` e observe JSONs de atualização em tempo real.
 
 ---
@@ -187,8 +200,12 @@ brew install protobuf
 sudo apt-get install protobuf-compiler
 ```
 
-#### Gerar Bindings
+ #### Adicionar o protoc ao PATH:
+```bash
+export PATH="$PATH:$(go env GOPATH)/bin"
+```
 
+#### Gerar Bindings
 ```bash
 protoc --go_out=. --go-grpc_out=. \
   --go_opt=paths=source_relative \
@@ -210,6 +227,7 @@ grpcurl -plaintext -d '{"currency":"USD"}' localhost:50051 crypto.CryptoService/
 ├── README.md
 ├── go.mod
 ├── go.sum
+├── .env
 ├── internal
 │   ├── api
 │   ├── config
