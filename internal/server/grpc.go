@@ -62,16 +62,25 @@ func (s *CryptoServer) StreamCryptoUpdates(req *proto.CryptoRequest, stream prot
         }
 
         var response proto.CryptoResponse
+        exchangeRate := 1.0
+
+        if req.Currency != "" && req.Currency != "USD" {
+            exchangeRate, err = api.GetExchangeRate(req.Currency)
+            if err != nil {
+                return err
+            }
+        }
+
         for _, crypto := range cryptos {
             response.Cryptos = append(response.Cryptos, &proto.Crypto{
                 Name:          crypto.Name,
                 Symbol:        crypto.Symbol,
-                MarketCap:     crypto.MarketCap,
-                CurrentPrice:  crypto.CurrentPrice,
+                MarketCap:     crypto.MarketCap * exchangeRate,
+                CurrentPrice:  crypto.CurrentPrice * exchangeRate,
                 MarketCapRank: int32(crypto.MarketCapRank),
             })
         }
-
+        
         if err := stream.Send(&response); err != nil {
             return err
         }
