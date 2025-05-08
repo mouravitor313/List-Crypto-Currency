@@ -193,18 +193,28 @@ curl "http://localhost:8000/cryptos?currency=BRL"
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
-# macOS
+```
+#### macOS
+```bash
 brew install protobuf
-# Linux
+```
+#### Linux
+```bash
 sudo apt-get install protobuf-compiler
 ```
 
- #### Adicionar o protoc ao PATH:
+#### Execute o servidor:
+
+```bash
+go run main.go
+```
+
+ #### Abra outra instância do terminal e adicione o protoc ao PATH:
 ```bash
 export PATH="$PATH:$(go env GOPATH)/bin"
 ```
 
-#### Gerar Bindings
+#### Execute na segunda instância para gerar Bindings
 ```bash
 protoc --go_out=. --go-grpc_out=. \
   --go_opt=paths=source_relative \
@@ -212,7 +222,7 @@ protoc --go_out=. --go-grpc_out=. \
   internal/proto/crypto.proto
 ```
 
-#### Teste com grpcurl
+#### Execute na segunda instância para testar com grpcurl
 
 ```bash
 grpcurl -plaintext -d '{"currency":"USD"}' localhost:50051 crypto.CryptoService/GetTopCryptos
