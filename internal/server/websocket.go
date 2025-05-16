@@ -1,5 +1,7 @@
 package server
 
+// teste
+
 import (
     "fmt"
     "net/http"
